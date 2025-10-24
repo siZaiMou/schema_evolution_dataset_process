@@ -1078,7 +1078,7 @@ class SchemaEvolver:
 if __name__ == "__main__":
     # 创建演化器实例
     evolver = SchemaEvolver(
-        output_dir="./enhanced_evolved_dataset",  # 输出目录
+        output_dir="enhanced_evolved_dataset",  # 输出目录
         num_versions=5,  # 生成5个版本
         num_docs_per_version=3  # 每个版本生成3个文档
     )
