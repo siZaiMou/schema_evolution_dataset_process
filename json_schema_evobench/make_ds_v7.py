@@ -347,7 +347,7 @@ class EnhancedSchemaEvolutionStrategy:
         field_types = ["string", "integer", "number", "boolean", "object", "array"]
         field_type = random.choice(field_types)
 
-        base_names = ["field", "property", "attr", "item", "data"]
+        base_names = ["field", "property", "attr", "item", "running_case"]
         new_field = f"{random.choice(base_names)}_{version_num}"
 
         # 创建字段定义
@@ -942,7 +942,7 @@ class SchemaEvolver:
 
     def __init__(self, output_dir: str = "./evolved_dataset",
                  num_versions: int = 10,
-                 num_docs_per_version: int = 3):  # 减少为3个文档
+                 num_docs_per_version: int = 3):  # 每个版本固定3个文档
         """初始化演化器"""
         self.output_dir = output_dir
         self.num_versions = num_versions
@@ -964,8 +964,8 @@ class SchemaEvolver:
         # 重置已执行操作记录
         EnhancedSchemaEvolutionStrategy.executed_operations = set()
 
-        # 存储所有文档数据（用于迁移）
-        all_docs = {}
+        # 存储当前版本的文档数据
+        current_docs = {}
 
         for v in range(1, self.num_versions + 1):
             # 演化 schema
@@ -977,38 +977,30 @@ class SchemaEvolver:
             self._save_json_file(evolved_schema, os.path.join(schema_dir, "schema.json"))
 
             # 生成或迁移文档
-            current_docs = {}
+            new_docs = {}
 
             # 如果是第一个版本，生成新文档
             if v == 1:
                 for doc_id in range(1, self.num_docs_per_version + 1):
                     data = SchemaUtils.generate_example(evolved_schema)
-                    current_docs[doc_id] = data
+                    new_docs[doc_id] = data
                     self._save_json_file(data, os.path.join(schema_dir, f"{doc_id}.json"))
             else:
-                # 迁移之前版本的所有文档
-                for doc_id, old_data in all_docs.items():
+                # 迁移之前版本的所有文档到新schema
+                for doc_id, old_data in current_docs.items():
                     # 迁移数据到新schema
                     migrated_data = SchemaUtils.migrate_data(
                         old_data,
                         current_schema,
                         evolved_schema
                     )
-                    current_docs[doc_id] = migrated_data
+                    new_docs[doc_id] = migrated_data
                     self._save_json_file(migrated_data, os.path.join(schema_dir, f"{doc_id}.json"))
 
-                # 添加新文档
-                for i in range(1, self.num_docs_per_version + 1):
-                    doc_id = max(all_docs.keys()) + i if all_docs else i
-                    new_data = SchemaUtils.generate_example(evolved_schema)
-                    current_docs[doc_id] = new_data
-                    self._save_json_file(new_data, os.path.join(schema_dir, f"{doc_id}.json"))
-
-            # 更新所有文档存储
-            all_docs = current_docs
-
-            log.append(f"v{v}: {desc}")
+            # 更新当前文档存储
+            current_docs = new_docs
             current_schema = evolved_schema
+            log.append(f"v{v}: {desc}")
 
         # 保存变更日志
         with open(os.path.join(entity_dir, "change_log.txt"), "w", encoding="utf-8") as f:

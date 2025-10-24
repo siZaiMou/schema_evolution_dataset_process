@@ -221,7 +221,7 @@ class EnhancedSchemaEvolutionStrategy:
         field_types = ["string", "integer", "number", "boolean", "object", "array"]
         field_type = random.choice(field_types)
 
-        base_names = ["field", "property", "attr", "item", "data"]
+        base_names = ["field", "property", "attr", "item", "running_case"]
         new_field = f"{random.choice(base_names)}_{version_num}"
 
         # 创建字段定义
